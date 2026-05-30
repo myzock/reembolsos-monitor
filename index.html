@@ -735,7 +735,7 @@ function startClock() {
 }
 
 // ─── PARSEAR CSV ──────────────────────────────────────────────
-// Columnas esperadas: account | staff | docok | rechazos | solicitodoc
+// Columnas esperadas: account | staff | docok | rechazos | solicitodoc | finalizados
 function parseCsv(raw) {
   const lines = raw.trim().split('\n').filter(Boolean);
   if (lines.length < 2) return [];
@@ -748,13 +748,14 @@ function parseCsv(raw) {
     const docok       = parseInt(row['docok'])       || 0;
     const rechazos    = parseInt(row['rechazos'])    || 0;
     const solicitodoc = parseInt(row['solicitodoc']) || 0;
+    const finalizados = parseInt(row['finalizados']) || 0;
     return {
       account:  row['account'] || `Cuenta ${i+1}`,
       eyebrow:  'Cuenta',
       subtitle: 'Riesgo Propio',
       staff:    parseInt(row['staff']) || 0,
       color:    color,
-      finalizados: 0,
+      finalizados: finalizados,
       states: [
         { label: 'Doc OK',       value: docok,        color: '#00e5a0' },
         { label: 'Rechazos',     value: rechazos,     color: '#ff4d6d' },
