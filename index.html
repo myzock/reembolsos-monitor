@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DEPARTAMENTO DE REEMBOLSOS</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#080c12" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Reembolsos" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta name="description" content="Monitor operativo en vivo — Departamento de Reembolsos" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────────── */
+    :root {
+      --bg:          #080c12;
+      --surface:     #0e1520;
+      --border:      rgba(255,255,255,0.07);
+      --accent:      #00e5ff;
+      --accent-dim:  rgba(0,229,255,0.12);
+      --accent-glow: rgba(0,229,255,0.35);
+      --text-primary:   #f0f4f8;
+      --text-secondary: rgba(240,244,248,0.70);
+      --text-muted:     rgba(240,244,248,0.45);
+      --good:   #00e5a0;
+      --warn:   #ffc542;
+      --danger: #ff4d6d;
+      --radius: 20px;
+      --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    [data-theme="light"] {
+      --bg:          #f0f4f8;
+      --surface:     #ffffff;
+      --border:      rgba(0,0,0,0.07);
+      --accent:      #006ef5;
+      --accent-dim:  rgba(0,110,245,0.08);
+      --accent-glow: rgba(0,110,245,0.25);
+      --text-primary:   #0a0e1a;
+      --text-secondary: rgba(10,14,26,0.50);
+      --text-muted:     rgba(10,14,26,0.28);
+    }
+
+    /* ── RESET ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      transition: background var(--transition), color var(--transition);
+      overflow-x: hidden;
+    }
+
+    /* ── NOISE OVERLAY ─────────────────────────────────────── */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── LAYOUT ────────────────────────────────────────────── */
+    .shell {
+      position: relative; z-index: 1;
+      display: flex; flex-direction: column;
+      min-height: 100vh;
+      padding: 28px 36px;
+      gap: 28px;
+    }
+
+    /* ── TOP BAR ───────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+    .brand {
+      display: flex; align-items: center; gap: 14px;
+    }
+    .brand-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 14px var(--accent-glow);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50%       { transform: scale(1.4); opacity: 0.6; }
+    }
+    .brand-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 3px;
+      color: var(--text-primary);
+    }
+    .brand-tag {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-top: 1px;
+    }
+
+    .topbar-right {
+      display: flex; align-items: center; gap: 20px;
+    }
+    .clock {
+      display: flex; flex-direction: column; align-items: flex-end;
+      gap: 2px;
+    }
+    .clock-time {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 26px;
+      letter-spacing: 2px;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+    .clock-date {
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    /* ── THEME TOGGLE ──────────────────────────────────────── */
+    .toggle-btn {
+      display: flex; align-items: center; justify-content: center;
+      width: 42px; height: 42px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      transition: background var(--transition), border-color var(--transition), transform 0.2s;
+      color: var(--text-secondary);
+      font-size: 18px;
+      user-select: none;
+    }
+    .toggle-btn:hover { transform: scale(1.08); color: var(--accent); border-color: var(--accent); }
+
+    /* ── STATUS BAR ────────────────────────────────────────── */
+    .statusbar {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 18px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      width: fit-content;
+    }
+    .status-indicator {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--good);
+      box-shadow: 0 0 10px var(--good);
+      animation: pulse 2.5s ease-in-out infinite;
+    }
+    .status-label {
+      font-size: 13px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--good);
+    }
+    .status-sep { color: var(--text-muted); font-size: 13px; }
+    .status-source {
+      font-size: 13px; font-weight: 400;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+    }
+
+    /* ── DIVIDER ───────────────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── SECTION LABEL ─────────────────────────────────────── */
+    .section-header {
+      display: flex; align-items: center; gap: 12px;
+    }
+    .section-label {
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+    .section-count {
+      font-size: 10px; font-weight: 500;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      background: var(--accent-dim);
+      padding: 2px 8px; border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    /* ── CARDS GRID ────────────────────────────────────────── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px;
+    }
+
+    /* ── ACCOUNT CARD ──────────────────────────────────────── */
+    .account-card {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      padding: 0;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
+      transition: border-color var(--transition), transform 0.25s, box-shadow 0.25s;
+      cursor: default;
+    }
+    .account-card::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--card-accent, var(--accent));
+      box-shadow: 0 0 20px var(--card-accent, var(--accent-glow));
+      border-radius: 0 3px 3px 0;
+      transition: width 0.3s;
+      z-index: 1;
+    }
+    .account-card:hover {
+      border-color: var(--card-accent, var(--accent));
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+    }
+    .account-card:hover::before { width: 5px; }
+    .account-card::after {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 80% at 0% 50%, var(--card-accent-dim, var(--accent-dim)), transparent);
+      opacity: 0;
+      transition: opacity 0.4s;
+      pointer-events: none;
+    }
+    .account-card:hover::after { opacity: 1; }
+
+    /* left panel: name + staff */
+    .card-left {
+      display: flex; flex-direction: column;
+      justify-content: space-between;
+      padding: 24px 28px 24px 36px;
+      flex: 0 0 190px;
+      border-right: 1px solid var(--border);
+    }
+    .card-eyebrow {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+    .card-name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 34px;
+      letter-spacing: 2px;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+    .card-subtitle {
+      font-size: 13px; font-weight: 400;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* staff pill */
+    .card-staff {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      width: fit-content;
+      margin-top: 16px;
+    }
+    .staff-icon { font-size: 16px; line-height: 1; }
+    .staff-info { display: flex; flex-direction: column; gap: 0; }
+    .staff-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px; line-height: 1;
+      letter-spacing: 1px;
+      color: var(--text-primary);
+    }
+    .staff-label {
+      font-size: 8px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-secondary);
+    }
+
+    /* center: cases total */
+    .card-cases {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px 20px;
+      flex: 0 0 110px;
+      border-right: 1px solid var(--border);
+    }
+    .cases-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 68px;
+      line-height: 1;
+      letter-spacing: -1px;
+      color: var(--text-primary);
+      transition: color 0.3s;
+    }
+    .account-card:hover .cases-number {
+      color: var(--card-accent, var(--accent));
+    }
+    .cases-label {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* right: states */
+    .card-states {
+      display: flex; flex-direction: column;
+      justify-content: center;
+      gap: 10px;
+      flex: 1;
+      padding: 20px 24px;
+    }
+    .state-row {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .state-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .state-label {
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-secondary);
+      flex: 1;
+    }
+    .state-badge {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 30px; line-height: 1;
+      letter-spacing: 1px;
+      padding: 3px 14px;
+      border-radius: 8px;
+      min-width: 58px;
+      text-align: center;
+    }
+
+    /* ── HISTÓRICO PANEL ───────────────────────────────────── */
+    .historico-panel {
+      position: relative;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.06);
+      background: var(--surface);
+      overflow: hidden;
+      padding: 28px 36px 32px;
+    }
+    .historico-panel::before {
+      content: '';
+      position: absolute; left: 0; top: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #00e5ff, #00e5a0, #a78bfa, #fb923c, #38bdf8, #f472b6);
+    }
+    .historico-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 24px;
+    }
+    .historico-icon {
+      font-size: 14px;
+    }
+    .historico-title {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .historico-fecha {
+      font-size: 10px; font-weight: 400;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-left: auto;
+      text-transform: uppercase;
+    }
+    .historico-cuentas {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .historico-cuenta {
+      display: flex; flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 20px 12px;
+      background: var(--surface);
+      transition: background 0.2s;
+    }
+    .historico-cuenta:hover {
+      background: var(--bg);
+    }
+    .historico-rank {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 11px; letter-spacing: 2px;
+      opacity: 0.6;
+    }
+    .historico-cuenta-name {
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .historico-cuenta-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 52px; line-height: 1;
+      letter-spacing: -1px;
+    }
+    .historico-cuenta-label {
+      font-size: 8px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .historico-total-wrap {
+      display: flex; flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding-top: 4px;
+      border-top: 1px solid var(--border);
+    }
+    .historico-total-label {
+      font-size: 9px; font-weight: 600;
+      letter-spacing: 3px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+    .historico-total-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 88px; line-height: 1;
+      letter-spacing: -2px;
+      color: var(--text-primary);
+    }
+    .historico-total-sub {
+      font-size: 10px; font-weight: 400;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* ── FOOTER ────────────────────────────────────────────── */
+    .footer {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding-top: 4px;
+    }
+    .footer-left {
+      font-size: 11px; font-weight: 400;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+    }
+    .footer-right {
+      display: flex; align-items: center; gap: 16px;
+    }
+    .refresh-btn {
+      display: flex; align-items: center; gap: 7px;
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px; font-weight: 600;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s, transform 0.2s;
+    }
+    .refresh-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      transform: scale(1.04);
+    }
+    .refresh-btn.spinning svg { animation: spin 0.8s linear; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── SKELETON LOADER ───────────────────────────────────── */
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, var(--surface) 50%, var(--border) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 6px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ── ENTER ANIMATIONS ──────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .account-card {
+      animation: fadeUp 0.5s ease both;
+    }
+    .account-card:nth-child(1) { animation-delay: 0.05s; }
+    .account-card:nth-child(2) { animation-delay: 0.10s; }
+    .account-card:nth-child(3) { animation-delay: 0.15s; }
+    .account-card:nth-child(4) { animation-delay: 0.20s; }
+    .account-card:nth-child(5) { animation-delay: 0.25s; }
+    .account-card:nth-child(6) { animation-delay: 0.30s; }
+
+    /* ── RESPONSIVE ────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .cards-grid { grid-template-columns: 1fr; }
+      .shell { padding: 16px 20px; }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <div>
+        <div class="brand-name">DEPARTAMENTO DE REEMBOLSOS</div>
+        <div class="brand-tag">MONITOR EN VIVO</div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="statusbar">
+        <div class="status-indicator"></div>
+        <span class="status-label">En vivo</span>
+        <span class="status-sep">·</span>
+        <span class="status-source" id="sourceLabel">Google Sheets</span>
+      </div>
+      <div class="clock">
+        <div class="clock-time" id="clockTime">--:--:--</div>
+        <div class="clock-date" id="clockDate">-</div>
+      </div>
+      <button class="toggle-btn" id="themeToggle" title="Cambiar tema" aria-label="Cambiar tema">☀</button>
+    </div>
+  </header>
+
+  <div class="divider"></div>
+
+  <!-- SECTION HEADER -->
+  <div class="section-header">
+    <span class="section-label">Cuentas activas</span>
+    <div class="section-line"></div>
+    <span class="section-count" id="cardCount">1 cuenta</span>
+  </div>
+
+  <!-- CARDS -->
+  <main class="cards-grid" id="cardsGrid">
+    <!-- rendered by JS -->
+  </main>
+
+  <!-- HISTÓRICO -->
+  <div class="historico-panel" id="historico">
+    <div class="historico-header">
+      <span class="historico-icon">✓</span>
+      <span class="historico-title">Casos finalizados — Histórico</span>
+      <span class="historico-fecha" id="historico-fecha">—</span>
+    </div>
+    <div class="historico-cuentas" id="historico-cuentas">
+      <!-- rendered by JS -->
+    </div>
+    <div class="historico-total-wrap">
+      <div class="historico-total-label">Total departamento</div>
+      <div class="historico-total-num" id="historico-total">0</div>
+      <div class="historico-total-sub">casos finalizados al día de hoy</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <span class="footer-left">Última actualización: <span id="lastUpdate">—</span></span>
+    <div class="footer-right">
+      <button class="refresh-btn" id="refreshBtn" onclick="refreshData()">
+        <svg id="refreshIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 12a9 9 0 0 1-15 6.7L3 16"/>
+        </svg>
+        Actualizar
+      </button>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CONFIG — conectar a tu Google Sheet
+//  1. En Google Sheets: Archivo → Compartir → Publicar en la web
+//     → Hoja: la que quieras → Formato: CSV → Publicar
+//  2. Pega la URL aquí abajo.
+//  Columnas esperadas: account | cases | staff | color | status
+// ─────────────────────────────────────────────
+const CONFIG = {
+  sheetCsvUrl: '',   // ← pega aquí tu URL de CSV publicado
+  refreshIntervalMs: 60_000,   // refresco automático cada 60 s
+};
+
+// ─── DATOS LOCALES (usados cuando no hay sheet) ───────────────
+const LOCAL_DATA = [
+  {
+    account: 'PTV',
+    eyebrow: 'Cuenta',
+    subtitle: 'Riesgo Propio',
+    staff: 3,
+    color: '#00e5ff',
+    finalizados: 1300,
+    states: [
+      { label: 'Pendientes',    value: 12, color: '#ffc542' },
+      { label: 'Doc OK',        value: 10, color: '#00e5a0' },
+      { label: 'Rechazos',      value:  6, color: '#ff4d6d' },
+      { label: 'Solicito Doc',  value: 10, color: '#00e5ff' },
+    ],
+  },
+  {
+    account: 'COMPARA',
+    eyebrow: 'Cuenta',
+    subtitle: 'Riesgo Propio',
+    staff: 1,
+    color: '#00e5a0',
+    finalizados: 980,
+    states: [
+      { label: 'Pendientes',    value: 18, color: '#ffc542' },
+      { label: 'Doc OK',        value: 14, color: '#00e5a0' },
+      { label: 'Rechazos',      value:  4, color: '#ff4d6d' },
+      { label: 'Solicito Doc',  value:  7, color: '#00e5ff' },
+    ],
+  },
+  {
+    account: 'ASSIST 365',
+    eyebrow: 'Cuenta',
+    subtitle: 'Riesgo Propio',
+    staff: 3,
+    color: '#a78bfa',
+    finalizados: 4200,
+    states: [
+      { label: 'Pendientes',    value: 52, color: '#ffc542' },
+      { label: 'Doc OK',        value: 48, color: '#00e5a0' },
+      { label: 'Rechazos',      value: 21, color: '#ff4d6d' },
+      { label: 'Solicito Doc',  value: 24, color: '#00e5ff' },
+    ],
+  },
+  {
+    account: 'ASSISTO',
+    eyebrow: 'Cuenta',
+    subtitle: 'Riesgo Propio',
+    staff: 2,
+    color: '#fb923c',
+    finalizados: 640,
+    states: [
+      { label: 'Pendientes',   value: 22, color: '#ffc542' },
+      { label: 'Doc OK',       value: 17, color: '#00e5a0' },
+      { label: 'Rechazos',     value:  8, color: '#ff4d6d' },
+      { label: 'Solicito Doc', value: 11, color: '#00e5ff' },
+    ],
+  },
+  {
+    account: 'CELESTE',
+    eyebrow: 'Cuenta',
+    subtitle: 'Riesgo Propio',
+    staff: 4,
+    color: '#38bdf8',
+    finalizados: 1100,
+    states: [
+      { label: 'Pendientes',   value: 31, color: '#ffc542' },
+      { label: 'Doc OK',       value: 25, color: '#00e5a0' },
+      { label: 'Rechazos',     value: 11, color: '#ff4d6d' },
+      { label: 'Solicito Doc', value: 19, color: '#00e5ff' },
+    ],
+  },
+  {
+    account: 'SAFE TRAVEL',
+    eyebrow: 'Cuenta',
+    subtitle: 'Riesgo Propio',
+    staff: 2,
+    color: '#f472b6',
+    finalizados: 380,
+    states: [
+      { label: 'Pendientes',   value: 14, color: '#ffc542' },
+      { label: 'Doc OK',       value:  9, color: '#00e5a0' },
+      { label: 'Rechazos',     value:  3, color: '#ff4d6d' },
+      { label: 'Solicito Doc', value:  8, color: '#00e5ff' },
+    ],
+  },
+];
+
+// ─── PALETA DE COLORES POR DEFECTO ───────────────────────────
+const PALETTE = ['#00e5ff','#00e5a0','#ffc542','#ff4d6d','#a78bfa','#fb923c'];
+
+// ─── ESTADO ───────────────────────────────────────────────────
+let data = [];
+let refreshTimer = null;
+
+// ─── UTILIDADES ───────────────────────────────────────────────
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `${r},${g},${b}`;
+}
+
+function formatTime(d) {
+  return d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+}
+function formatDate(d) {
+  return d.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
+// ─── RELOJ ────────────────────────────────────────────────────
+function startClock() {
+  function tick() {
+    const now = new Date();
+    document.getElementById('clockTime').textContent = formatTime(now);
+    document.getElementById('clockDate').textContent = formatDate(now);
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+// ─── PARSEAR CSV ──────────────────────────────────────────────
+function parseCsv(raw) {
+  const lines = raw.trim().split('\n').filter(Boolean);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+  return lines.slice(1).map((line, i) => {
+    const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+    const row = {};
+    headers.forEach((h, j) => { row[h] = cols[j] ?? ''; });
+    return {
+      account:  row['account']  || `Cuenta ${i+1}`,
+      eyebrow:  row['eyebrow']  || 'Cuenta',
+      subtitle: row['subtitle'] || '',
+      cases:    parseInt(row['cases'])  || 0,
+      staff:    parseInt(row['staff'])  || 0,
+      color:    row['color']    || PALETTE[i % PALETTE.length],
+      status:   row['status']   || 'active',
+      tags:     row['tags']     ? row['tags'].split('|') : [],
+    };
+  });
+}
+
+// ─── FETCH DATOS ──────────────────────────────────────────────
+async function fetchData() {
+  if (!CONFIG.sheetCsvUrl) {
+    data = LOCAL_DATA;
+    render();
+    return;
+  }
+  try {
+    document.getElementById('sourceLabel').textContent = 'Cargando…';
+    const res = await fetch(CONFIG.sheetCsvUrl);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const csv = await res.text();
+    data = parseCsv(csv);
+    document.getElementById('sourceLabel').textContent = 'Google Sheets';
+  } catch (err) {
+    console.warn('Sheet error, usando datos locales:', err);
+    data = LOCAL_DATA;
+    document.getElementById('sourceLabel').textContent = 'Datos locales';
+  }
+  render();
+}
+
+// ─── RENDER ───────────────────────────────────────────────────
+function render() {
+  const grid = document.getElementById('cardsGrid');
+  grid.innerHTML = '';
+  document.getElementById('cardCount').textContent = `${data.length} cuenta${data.length !== 1 ? 's' : ''}`;
+
+  data.forEach(item => {
+    const color = item.color;
+    const dimRgb = hexToRgb(color);
+    const total = item.states ? item.states.reduce((s, st) => s + st.value, 0) : (item.cases || 0);
+    const card = document.createElement('div');
+    card.className = 'account-card';
+    card.style.setProperty('--card-accent', color);
+    card.style.setProperty('--card-accent-dim', `rgba(${dimRgb},0.10)`);
+
+    const statesHtml = item.states ? `
+      <div class="card-states">
+        ${item.states.map(st => {
+          const rgb = hexToRgb(st.color);
+          return `
+          <div class="state-row">
+            <span class="state-dot" style="background:${st.color}"></span>
+            <span class="state-label">${st.label}</span>
+            <span class="state-badge"
+              style="color:${st.color}; background:rgba(${rgb},0.12); border:1px solid rgba(${rgb},0.25);"
+              data-target="${st.value}">0</span>
+          </div>`;
+        }).join('')}
+      </div>` : '';
+
+    card.innerHTML = `
+      <div class="card-left">
+        <div>
+          <div class="card-eyebrow">${item.eyebrow}</div>
+          <div class="card-name">${item.account}</div>
+          ${item.subtitle ? `<div class="card-subtitle">${item.subtitle}</div>` : ''}
+        </div>
+        <div class="card-staff" style="border-color: rgba(${dimRgb},0.30); background: rgba(${dimRgb},0.08);">
+          <div class="staff-icon">👥</div>
+          <div class="staff-info">
+            <div class="staff-number">${item.staff}</div>
+            <div class="staff-label">Asignados</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-cases">
+        <div class="cases-number" data-target="${total}">0</div>
+        <div class="cases-label">Casos</div>
+      </div>
+
+      ${statesHtml}
+    `;
+
+    grid.appendChild(card);
+  });
+
+  // animate numbers
+  grid.querySelectorAll('.cases-number, .state-badge').forEach(el => {
+    animateNumber(el, parseInt(el.dataset.target));
+  });
+
+  document.getElementById('lastUpdate').textContent = formatTime(new Date());
+  renderHistorico();
+}
+
+// ─── HISTÓRICO ────────────────────────────────────────────────
+function renderHistorico() {
+  const cuentasEl = document.getElementById('historico-cuentas');
+  const totalEl   = document.getElementById('historico-total');
+  const fechaEl   = document.getElementById('historico-fecha');
+
+  const total = data.reduce((s, d) => s + (d.finalizados || 0), 0);
+  const now   = new Date();
+  fechaEl.textContent = `Al ${now.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+
+  const sorted = [...data].sort((a, b) => (b.finalizados || 0) - (a.finalizados || 0));
+
+  cuentasEl.innerHTML = sorted.map((item, i) => `
+    <div class="historico-cuenta">
+      <span class="historico-rank" style="color:${item.color}">#${i + 1}</span>
+      <span class="historico-cuenta-name">${item.account}</span>
+      <span class="historico-cuenta-num" style="color:${item.color}" data-target="${item.finalizados || 0}">0</span>
+      <span class="historico-cuenta-label">finalizados</span>
+    </div>
+  `).join('');
+
+  animateNumber(totalEl, total);
+  cuentasEl.querySelectorAll('.historico-cuenta-num').forEach(el => {
+    animateNumber(el, parseInt(el.dataset.target));
+  });
+}
+
+// ─── ANIMACIÓN DE NÚMEROS ─────────────────────────────────────
+function animateNumber(el, target) {
+  const duration = 900;
+  const start = performance.now();
+  function step(now) {
+    const t = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 3); // ease-out-cubic
+    el.textContent = Math.round(ease * target);
+    if (t < 1) requestAnimationFrame(step);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(step);
+}
+
+// ─── REFRESCAR MANUALMENTE ────────────────────────────────────
+async function refreshData() {
+  const btn = document.getElementById('refreshBtn');
+  const icon = document.getElementById('refreshIcon');
+  btn.classList.add('spinning');
+  icon.style.animation = 'spin 0.7s linear';
+  await fetchData();
+  setTimeout(() => {
+    btn.classList.remove('spinning');
+    icon.style.animation = '';
+  }, 750);
+}
+
+// ─── TEMA ─────────────────────────────────────────────────────
+function initTheme() {
+  const btn = document.getElementById('themeToggle');
+  const stored = localStorage.getItem('ops-theme') || 'dark';
+  setTheme(stored, btn);
+  btn.addEventListener('click', () => {
+    const curr = document.documentElement.dataset.theme;
+    setTheme(curr === 'dark' ? 'light' : 'dark', btn);
+  });
+}
+function setTheme(t, btn) {
+  document.documentElement.dataset.theme = t;
+  btn.textContent = t === 'dark' ? '☀' : '☾';
+  localStorage.setItem('ops-theme', t);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────
+startClock();
+initTheme();
+fetchData();
+
+// refresco automático
+if (CONFIG.refreshIntervalMs > 0) {
+  setInterval(fetchData, CONFIG.refreshIntervalMs);
+}
+
+// ─── SERVICE WORKER ───────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('SW registrado'))
+      .catch(err => console.warn('SW error:', err));
+  });
+}
+</script>
+</body>
+</html>
