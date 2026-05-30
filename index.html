@@ -609,7 +609,7 @@
 //  Columnas esperadas: account | cases | staff | color | status
 // ─────────────────────────────────────────────
 const CONFIG = {
-  sheetCsvUrl: 'https://docs.google.com/spreadsheets/d/1yk2bDcwb9htmSXQKRLDFUuydodvnIrqqcloMghaTubw',   // ← pega aquí tu URL de CSV publicado
+  sheetCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQiMfj0ip5PgedkDseKXsURINsek-prgcJDYTZ_KRxhowvRq6J0dIrbVvnjc4rxDswHVHf8qf0_cqqs/pub?gid=523825407&single=true&output=csv',
   refreshIntervalMs: 60_000,   // refresco automático cada 60 s
 };
 
@@ -735,6 +735,7 @@ function startClock() {
 }
 
 // ─── PARSEAR CSV ──────────────────────────────────────────────
+// Columnas esperadas: account | staff | docok | rechazos | solicitodoc
 function parseCsv(raw) {
   const lines = raw.trim().split('\n').filter(Boolean);
   if (lines.length < 2) return [];
@@ -743,15 +744,22 @@ function parseCsv(raw) {
     const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
     const row = {};
     headers.forEach((h, j) => { row[h] = cols[j] ?? ''; });
+    const color = PALETTE[i % PALETTE.length];
+    const docok       = parseInt(row['docok'])       || 0;
+    const rechazos    = parseInt(row['rechazos'])    || 0;
+    const solicitodoc = parseInt(row['solicitodoc']) || 0;
     return {
-      account:  row['account']  || `Cuenta ${i+1}`,
-      eyebrow:  row['eyebrow']  || 'Cuenta',
-      subtitle: row['subtitle'] || '',
-      cases:    parseInt(row['cases'])  || 0,
-      staff:    parseInt(row['staff'])  || 0,
-      color:    row['color']    || PALETTE[i % PALETTE.length],
-      status:   row['status']   || 'active',
-      tags:     row['tags']     ? row['tags'].split('|') : [],
+      account:  row['account'] || `Cuenta ${i+1}`,
+      eyebrow:  'Cuenta',
+      subtitle: 'Riesgo Propio',
+      staff:    parseInt(row['staff']) || 0,
+      color:    color,
+      finalizados: 0,
+      states: [
+        { label: 'Doc OK',       value: docok,        color: '#00e5a0' },
+        { label: 'Rechazos',     value: rechazos,     color: '#ff4d6d' },
+        { label: 'Solicito Doc', value: solicitodoc,  color: '#00e5ff' },
+      ],
     };
   });
 }
