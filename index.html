@@ -47,7 +47,7 @@
     }
 
     /* ── RESET ─────────────────────────────────────────────── */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body {
       font-family: 'DM Sans', sans-serif;
@@ -520,10 +520,91 @@
     .account-card:nth-child(5) { animation-delay: 0.25s; }
     .account-card:nth-child(6) { animation-delay: 0.30s; }
 
-    /* ── RESPONSIVE ────────────────────────────────────────── */
+    /* ── RESPONSIVE MOBILE ─────────────────────────────────── */
     @media (max-width: 900px) {
-      .cards-grid { grid-template-columns: 1fr; }
-      .shell { padding: 16px 20px; }
+
+      .shell { padding: 16px 16px; gap: 16px; }
+
+      /* header */
+      .topbar { flex-wrap: wrap; gap: 10px; }
+      .brand-name { font-size: 16px; letter-spacing: 2px; }
+      .brand-tag { font-size: 10px; }
+      .topbar-right { gap: 10px; }
+      .clock-time { font-size: 20px; }
+      .clock-date { font-size: 10px; }
+      .statusbar { padding: 7px 12px; }
+      .status-label, .status-source, .status-sep { font-size: 11px; }
+
+      /* grid: 1 columna */
+      .cards-grid { grid-template-columns: 1fr; gap: 12px; }
+
+      /* card: apilada verticalmente */
+      .account-card {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .account-card::before {
+        top: 0; left: 0; right: 0; bottom: auto;
+        width: auto; height: 3px;
+        border-radius: 0 0 3px 3px;
+      }
+      .account-card:hover::before { width: auto; height: 5px; }
+
+      /* panel izquierdo: nombre + staff en fila */
+      .card-left {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        flex: none;
+      }
+      .card-name { font-size: 28px; }
+      .card-eyebrow { font-size: 9px; }
+      .card-subtitle { font-size: 11px; }
+      .card-staff { margin-top: 0; }
+      .staff-number { font-size: 20px; }
+
+      /* casos + estados: en fila */
+      .card-cases {
+        flex-direction: row;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 14px 20px;
+        flex: none;
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+      }
+      .cases-number { font-size: 52px; }
+      .cases-label { margin-top: 0; font-size: 10px; }
+
+      /* estados */
+      .card-states {
+        padding: 14px 20px;
+        gap: 10px;
+      }
+      .state-label { font-size: 10px; }
+      .state-badge { font-size: 26px; padding: 2px 12px; min-width: 50px; }
+
+      /* histórico */
+      .historico-panel { padding: 20px 16px 24px; }
+      .historico-cuentas {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .historico-cuenta-num { font-size: 36px; }
+      .historico-total-num { font-size: 60px; }
+      .historico-title { font-size: 9px; }
+      .historico-fecha { font-size: 9px; }
+
+      /* footer */
+      .footer { flex-direction: column; align-items: flex-start; gap: 10px; }
+    }
+
+    @media (max-width: 480px) {
+      .topbar-right { width: 100%; justify-content: space-between; }
+      .historico-cuentas { grid-template-columns: repeat(2, 1fr); }
     }
   </style>
 </head>
@@ -578,7 +659,7 @@
     <div class="historico-cuentas" id="historico-cuentas">
       <!-- rendered by JS -->
     </div>
-    <div class="historico-total-wrap" style="display:none">
+    <div class="historico-total-wrap">
       <div class="historico-total-label">Total departamento</div>
       <div class="historico-total-num" id="historico-total">0</div>
       <div class="historico-total-sub">casos finalizados al día de hoy</div>
@@ -609,7 +690,7 @@
 //  Columnas esperadas: account | cases | staff | color | status
 // ─────────────────────────────────────────────
 const CONFIG = {
-  sheetCsvUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQiMfj0ip5PgedkDseKXsURINsek-prgcJDYTZ_KRxhowvRq6J0dIrbVvnjc4rxDswHVHf8qf0_cqqs/pub?gid=523825407&single=true&output=csv',
+  sheetCsvUrl: '',   // ← pega aquí tu URL de CSV publicado
   refreshIntervalMs: 60_000,   // refresco automático cada 60 s
 };
 
@@ -735,32 +816,23 @@ function startClock() {
 }
 
 // ─── PARSEAR CSV ──────────────────────────────────────────────
-// Columnas esperadas: account | staff | docok | rechazos | solicitodoc | finalizados
 function parseCsv(raw) {
   const lines = raw.trim().split('\n').filter(Boolean);
   if (lines.length < 2) return [];
   const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-  return lines.slice(1).filter(line => line.split(',')[0].trim().replace(/^"|"$/g, '') !== '').map((line, i) => {
+  return lines.slice(1).map((line, i) => {
     const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
     const row = {};
     headers.forEach((h, j) => { row[h] = cols[j] ?? ''; });
-    const color = PALETTE[i % PALETTE.length];
-    const docok       = parseInt(row['docok'])       || 0;
-    const rechazos    = parseInt(row['rechazos'])    || 0;
-    const solicitodoc = parseInt(row['solicitodoc']) || 0;
-    const finalizados = parseInt(row['finalizados']) || 0;
     return {
-      account:  row['account'] || `Cuenta ${i+1}`,
-      eyebrow:  'Cuenta',
-      subtitle: 'Riesgo Propio',
-      staff:    parseInt(row['staff']) || 0,
-      color:    color,
-      finalizados: finalizados,
-      states: [
-        { label: 'Doc OK',       value: docok,        color: '#00e5a0' },
-        { label: 'Rechazos',     value: rechazos,     color: '#ff4d6d' },
-        { label: 'Solicito Doc', value: solicitodoc,  color: '#00e5ff' },
-      ],
+      account:  row['account']  || `Cuenta ${i+1}`,
+      eyebrow:  row['eyebrow']  || 'Cuenta',
+      subtitle: row['subtitle'] || '',
+      cases:    parseInt(row['cases'])  || 0,
+      staff:    parseInt(row['staff'])  || 0,
+      color:    row['color']    || PALETTE[i % PALETTE.length],
+      status:   row['status']   || 'active',
+      tags:     row['tags']     ? row['tags'].split('|') : [],
     };
   });
 }
