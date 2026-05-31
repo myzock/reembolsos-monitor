@@ -659,7 +659,7 @@
     <div class="historico-cuentas" id="historico-cuentas">
       <!-- rendered by JS -->
     </div>
-    <div class="historico-total-wrap">
+    <div class="historico-total-wrap" style="display:none">
       <div class="historico-total-label">Total departamento</div>
       <div class="historico-total-num" id="historico-total">0</div>
       <div class="historico-total-sub">casos finalizados al día de hoy</div>
@@ -865,7 +865,13 @@ function render() {
   grid.innerHTML = '';
   document.getElementById('cardCount').textContent = `${data.length} cuenta${data.length !== 1 ? 's' : ''}`;
 
-  data.forEach(item => {
+  const sorted = [...data].sort((a, b) => {
+    const totalA = a.states ? a.states.reduce((s, st) => s + st.value, 0) : (a.cases || 0);
+    const totalB = b.states ? b.states.reduce((s, st) => s + st.value, 0) : (b.cases || 0);
+    return totalB - totalA;
+  });
+
+  sorted.forEach(item => {
     const color = item.color;
     const dimRgb = hexToRgb(color);
     const total = item.states ? item.states.reduce((s, st) => s + st.value, 0) : (item.cases || 0);
