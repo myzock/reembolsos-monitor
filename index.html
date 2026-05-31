@@ -682,16 +682,23 @@
 </div>
 
 <script>
-// ─────────────────────────────────────────────
-//  CONFIG — conectar a tu Google Sheet
-//  1. En Google Sheets: Archivo → Compartir → Publicar en la web
-//     → Hoja: la que quieras → Formato: CSV → Publicar
-//  2. Pega la URL aquí abajo.
-//  Columnas esperadas: account | cases | staff | color | status
-// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+//  CUENTAS — agregá la URL de cada sheet a medida que la tenés.
+//  Si la URL está vacía ('') la cuenta no se muestra.
+//  Columnas esperadas en hoja DASHBOARD:
+//  pendientes | docok | rechazos | solicitodoc | finalizados | staff
+// ─────────────────────────────────────────────────────────────
+const SHEETS = [
+  { account: 'PTV',        color: '#00e5ff', url: '' },
+  { account: 'COMPARA',    color: '#00e5a0', url: '' },
+  { account: 'ASSIST 365', color: '#a78bfa', url: '' },
+  { account: 'ASSISTO',    color: '#fb923c', url: '' },
+  { account: 'CELESTE',    color: '#38bdf8', url: '' },
+  { account: 'SAFE TRAVEL',color: '#f472b6', url: '' },
+];
+
 const CONFIG = {
-  sheetCsvUrl: '',   // ← pega aquí tu URL de CSV publicado
-  refreshIntervalMs: 60_000,   // refresco automático cada 60 s
+  refreshIntervalMs: 60_000,
 };
 
 // ─── DATOS LOCALES (usados cuando no hay sheet) ───────────────
@@ -815,47 +822,58 @@ function startClock() {
   setInterval(tick, 1000);
 }
 
-// ─── PARSEAR CSV ──────────────────────────────────────────────
-function parseCsv(raw) {
+// ─── PARSEAR CSV DE UNA CUENTA ────────────────────────────────
+function parseCuentaCsv(raw, sheet) {
   const lines = raw.trim().split('\n').filter(Boolean);
-  if (lines.length < 2) return [];
+  if (lines.length < 2) return null;
   const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-  return lines.slice(1).map((line, i) => {
-    const cols = line.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-    const row = {};
-    headers.forEach((h, j) => { row[h] = cols[j] ?? ''; });
-    return {
-      account:  row['account']  || `Cuenta ${i+1}`,
-      eyebrow:  row['eyebrow']  || 'Cuenta',
-      subtitle: row['subtitle'] || '',
-      cases:    parseInt(row['cases'])  || 0,
-      staff:    parseInt(row['staff'])  || 0,
-      color:    row['color']    || PALETTE[i % PALETTE.length],
-      status:   row['status']   || 'active',
-      tags:     row['tags']     ? row['tags'].split('|') : [],
-    };
-  });
+  const cols = lines[1].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+  const row = {};
+  headers.forEach((h, j) => { row[h] = cols[j] ?? ''; });
+  return {
+    account:     sheet.account,
+    eyebrow:     'Cuenta',
+    subtitle:    'Riesgo Propio',
+    color:       sheet.color,
+    staff:       parseInt(row['staff']) || 0,
+    finalizados: parseInt(row['finalizados']) || 0,
+    states: [
+      { label: 'Pendientes',   value: parseInt(row['pendientes'])  || 0, color: '#ffc542' },
+      { label: 'Doc OK',       value: parseInt(row['docok'])       || 0, color: '#00e5a0' },
+      { label: 'Rechazos',     value: parseInt(row['rechazos'])    || 0, color: '#ff4d6d' },
+      { label: 'Solicito Doc', value: parseInt(row['solicitodoc']) || 0, color: '#00e5ff' },
+    ],
+  };
 }
 
 // ─── FETCH DATOS ──────────────────────────────────────────────
 async function fetchData() {
-  if (!CONFIG.sheetCsvUrl) {
+  const activos = SHEETS.filter(s => s.url.trim() !== '');
+
+  if (activos.length === 0) {
     data = LOCAL_DATA;
     render();
     return;
   }
-  try {
-    document.getElementById('sourceLabel').textContent = 'Cargando…';
-    const res = await fetch(CONFIG.sheetCsvUrl);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const csv = await res.text();
-    data = parseCsv(csv);
-    document.getElementById('sourceLabel').textContent = 'Google Sheets';
-  } catch (err) {
-    console.warn('Sheet error, usando datos locales:', err);
-    data = LOCAL_DATA;
-    document.getElementById('sourceLabel').textContent = 'Datos locales';
-  }
+
+  document.getElementById('sourceLabel').textContent = 'Cargando…';
+
+  const results = await Promise.all(
+    activos.map(async sheet => {
+      try {
+        const res = await fetch(sheet.url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const csv = await res.text();
+        return parseCuentaCsv(csv, sheet);
+      } catch (err) {
+        console.warn(`Error cargando ${sheet.account}:`, err);
+        return null;
+      }
+    })
+  );
+
+  data = results.filter(Boolean);
+  document.getElementById('sourceLabel').textContent = 'Google Sheets';
   render();
 }
 
