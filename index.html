@@ -711,7 +711,6 @@ const LOCAL_DATA = [
     color: '#00e5ff',
     finalizados: 1300,
     states: [
-      { label: 'Pendientes',    value: 12, color: '#ffc542' },
       { label: 'Doc OK',        value: 10, color: '#00e5a0' },
       { label: 'Rechazos',      value:  6, color: '#ff4d6d' },
       { label: 'Solicito Doc',  value: 10, color: '#00e5ff' },
@@ -725,7 +724,6 @@ const LOCAL_DATA = [
     color: '#00e5a0',
     finalizados: 980,
     states: [
-      { label: 'Pendientes',    value: 18, color: '#ffc542' },
       { label: 'Doc OK',        value: 14, color: '#00e5a0' },
       { label: 'Rechazos',      value:  4, color: '#ff4d6d' },
       { label: 'Solicito Doc',  value:  7, color: '#00e5ff' },
@@ -739,7 +737,6 @@ const LOCAL_DATA = [
     color: '#a78bfa',
     finalizados: 4200,
     states: [
-      { label: 'Pendientes',    value: 52, color: '#ffc542' },
       { label: 'Doc OK',        value: 48, color: '#00e5a0' },
       { label: 'Rechazos',      value: 21, color: '#ff4d6d' },
       { label: 'Solicito Doc',  value: 24, color: '#00e5ff' },
@@ -753,7 +750,6 @@ const LOCAL_DATA = [
     color: '#fb923c',
     finalizados: 640,
     states: [
-      { label: 'Pendientes',   value: 22, color: '#ffc542' },
       { label: 'Doc OK',       value: 17, color: '#00e5a0' },
       { label: 'Rechazos',     value:  8, color: '#ff4d6d' },
       { label: 'Solicito Doc', value: 11, color: '#00e5ff' },
@@ -767,7 +763,6 @@ const LOCAL_DATA = [
     color: '#38bdf8',
     finalizados: 1100,
     states: [
-      { label: 'Pendientes',   value: 31, color: '#ffc542' },
       { label: 'Doc OK',       value: 25, color: '#00e5a0' },
       { label: 'Rechazos',     value: 11, color: '#ff4d6d' },
       { label: 'Solicito Doc', value: 19, color: '#00e5ff' },
@@ -781,7 +776,6 @@ const LOCAL_DATA = [
     color: '#f472b6',
     finalizados: 380,
     states: [
-      { label: 'Pendientes',   value: 14, color: '#ffc542' },
       { label: 'Doc OK',       value:  9, color: '#00e5a0' },
       { label: 'Rechazos',     value:  3, color: '#ff4d6d' },
       { label: 'Solicito Doc', value:  8, color: '#00e5ff' },
@@ -838,7 +832,6 @@ function parseCuentaCsv(raw, sheet) {
     staff:       parseInt(row['staff']) || 0,
     finalizados: parseInt(row['finalizados']) || 0,
     states: [
-      { label: 'Pendientes',   value: parseInt(row['pendientes'])  || 0, color: '#ffc542' },
       { label: 'Doc OK',       value: parseInt(row['docok'])       || 0, color: '#00e5a0' },
       { label: 'Rechazos',     value: parseInt(row['rechazos'])    || 0, color: '#ff4d6d' },
       { label: 'Solicito Doc', value: parseInt(row['solicitodoc']) || 0, color: '#00e5ff' },
