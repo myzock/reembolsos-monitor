@@ -690,7 +690,7 @@
 // ─────────────────────────────────────────────────────────────
 const SHEETS = [
   { account: 'PTV',        color: '#00e5ff', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQiMfj0ip5PgedkDseKXsURINsek-prgcJDYTZ_KRxhowvRq6J0dIrbVvnjc4rxDswHVHf8qf0_cqqs/pub?gid=523825407&single=true&output=csv' },
-  { account: 'COMPARA',    color: '#00e5a0', url: '' },
+  { account: 'COMPARA',    color: '#00e5a0', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtoN1I5IUJBFYRWN91Lg38J0oruZtcdP7cQrNT-oKV3yL3QxIC94hhZyt-OndS-MQ49h2vVgOLW5Em/pub?gid=747824445&single=true&output=csv' },
   { account: 'ASSIST 365', color: '#a78bfa', url: '' },
   { account: 'ASSISTO',    color: '#fb923c', url: '' },
   { account: 'CELESTE',    color: '#38bdf8', url: '' },
@@ -896,6 +896,7 @@ function render() {
     const statesHtml = item.states ? `
       <div class="card-states">
         ${item.states.map(st => {
+          if (st.value === 0) return ''; // ocultar badges en 0
           const rgb = hexToRgb(st.color);
           return `
           <div class="state-row">
