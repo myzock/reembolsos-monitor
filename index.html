@@ -689,7 +689,7 @@
 //  pendientes | docok | rechazos | solicitodoc | finalizados | staff
 // ─────────────────────────────────────────────────────────────
 const SHEETS = [
-  { account: 'PTV',        color: '#00e5ff', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQiMfj0ip5PgedkDseKXsURINsek-prgcJDYTZ_KRxhowvRq6J0dIrbVvnjc4rxDswHVHf8qf0_cqqs/pub?output=csv' },
+  { account: 'PTV',        color: '#00e5ff', url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQiMfj0ip5PgedkDseKXsURINsek-prgcJDYTZ_KRxhowvRq6J0dIrbVvnjc4rxDswHVHf8qf0_cqqs/pub?gid=523825407&single=true&output=csv' },
   { account: 'COMPARA',    color: '#00e5a0', url: '' },
   { account: 'ASSIST 365', color: '#a78bfa', url: '' },
   { account: 'ASSISTO',    color: '#fb923c', url: '' },
@@ -820,8 +820,10 @@ function startClock() {
 function parseCuentaCsv(raw, sheet) {
   const lines = raw.trim().split('\n').filter(Boolean);
   if (lines.length < 2) return null;
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-  const cols = lines[1].split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+  // detectar separador: tab o coma
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/\r/g,''));
+  const cols = lines[1].split(sep).map(c => c.trim().replace(/^"|"$/g, '').replace(/\r/g,''));
   const row = {};
   headers.forEach((h, j) => { row[h] = cols[j] ?? ''; });
   return {
