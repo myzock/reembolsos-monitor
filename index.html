@@ -525,38 +525,7 @@
     .account-card:nth-child(6) { animation-delay: 0.30s; }
 
     /* ── RESPONSIVE MOBILE ─────────────────────────────────── */
-    /* ── TABS ──────────────────────────────────────────────── */
-    .tabs-bar {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-    .tab-btn {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 11px;
-      font-weight: 600;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      padding: 6px 16px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .tab-btn:hover {
-      color: var(--text-secondary);
-      border-color: rgba(255,255,255,0.15);
-    }
-    .tab-btn.active {
-      background: var(--accent-dim);
-      border-color: var(--accent);
-      color: var(--accent);
-    }
-
-
+    @media (max-width: 900px) {
 
       html, body { overflow: auto; height: auto; }
       .shell { padding: 16px 16px; gap: 16px; height: auto; min-height: 100vh; overflow: visible; }
@@ -643,6 +612,36 @@
       .topbar-right { width: 100%; justify-content: space-between; }
       .historico-cuentas { grid-template-columns: repeat(2, 1fr); }
     }
+    /* ── TABS ──────────────────────────────────────────────── */
+    .tabs-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: var(--text-secondary);
+      border-color: rgba(255,255,255,0.15);
+    }
+    .tab-btn.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
   </style>
 </head>
 <body>
@@ -678,7 +677,7 @@
   <div class="tabs-bar">
     <button class="tab-btn active" id="tab-propio" onclick="switchTab('propio')">Riesgo Propio</button>
     <button class="tab-btn" id="tab-terceros" onclick="switchTab('terceros')">Riesgo Terceros</button>
-    <div class="section-line" style="flex:1"></div>
+    <div class="section-line"></div>
     <span class="section-count" id="cardCount">1 cuenta</span>
   </div>
 
@@ -844,8 +843,18 @@ const PALETTE = ['#00e5ff','#00e5a0','#ffc542','#ff4d6d','#a78bfa','#fb923c'];
 
 // ─── ESTADO ───────────────────────────────────────────────────
 let data = [];
-let activeTab = 'propio'; // 'propio' | 'terceros'
+let activeTab = 'propio';
 let refreshTimer = null;
+
+// ─── SWITCH TAB ───────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-propio').classList.toggle('active', tab === 'propio');
+  document.getElementById('tab-terceros').classList.toggle('active', tab === 'terceros');
+  if (refreshTimer) clearInterval(refreshTimer);
+  fetchData();
+  refreshTimer = setInterval(fetchData, CONFIG.refreshIntervalMs);
+}
 
 // ─── UTILIDADES ───────────────────────────────────────────────
 function hexToRgb(hex) {
@@ -886,7 +895,7 @@ function parseCuentaCsv(raw, sheet) {
   return {
     account:     sheet.account,
     eyebrow:     'Cuenta',
-    subtitle:    'Riesgo Propio',
+    subtitle:    activeTab === 'propio' ? 'Riesgo Propio' : 'Riesgo Terceros',
     color:       sheet.color,
     hideStates:  sheet.hideStates || false,
     staff:       parseInt(row['staff']) || 0,
@@ -899,17 +908,7 @@ function parseCuentaCsv(raw, sheet) {
   };
 }
 
-// ─── SWITCH TAB ───────────────────────────────────────────────
-function switchTab(tab) {
-  activeTab = tab;
-  document.getElementById('tab-propio').classList.toggle('active', tab === 'propio');
-  document.getElementById('tab-terceros').classList.toggle('active', tab === 'terceros');
-  if (refreshTimer) clearInterval(refreshTimer);
-  fetchData();
-  refreshTimer = setInterval(fetchData, CONFIG.refreshIntervalMs);
-}
-
-
+// ─── FETCH DATOS ──────────────────────────────────────────────
 async function fetchData() {
   const activos = SHEETS[activeTab].filter(s => s.url.trim() !== '');
 
@@ -921,17 +920,13 @@ async function fetchData() {
 
   document.getElementById('sourceLabel').textContent = 'Cargando…';
 
-  const subtitle = activeTab === 'propio' ? 'Riesgo Propio' : 'Riesgo Terceros';
-
   const results = await Promise.all(
     activos.map(async sheet => {
       try {
         const res = await fetch(sheet.url);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const csv = await res.text();
-        const parsed = parseCuentaCsv(csv, sheet);
-        if (parsed) parsed.subtitle = subtitle;
-        return parsed;
+        return parseCuentaCsv(csv, sheet);
       } catch (err) {
         console.warn(`Error cargando ${sheet.account}:`, err);
         return null;
