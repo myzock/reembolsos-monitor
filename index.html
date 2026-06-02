@@ -35,15 +35,15 @@
       --transition: 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
     [data-theme="light"] {
-      --bg:          #f0f4f8;
-      --surface:     #ffffff;
-      --border:      rgba(0,0,0,0.07);
+      --bg:          #e8edf2;
+      --surface:     #f0f4f8;
+      --border:      rgba(0,0,0,0.09);
       --accent:      #006ef5;
       --accent-dim:  rgba(0,110,245,0.08);
       --accent-glow: rgba(0,110,245,0.25);
       --text-primary:   #0a0e1a;
-      --text-secondary: rgba(10,14,26,0.50);
-      --text-muted:     rgba(10,14,26,0.28);
+      --text-secondary: rgba(10,14,26,0.55);
+      --text-muted:     rgba(10,14,26,0.32);
     }
 
     /* ── RESET ─────────────────────────────────────────────── */
@@ -525,7 +525,38 @@
     .account-card:nth-child(6) { animation-delay: 0.30s; }
 
     /* ── RESPONSIVE MOBILE ─────────────────────────────────── */
-    @media (max-width: 900px) {
+    /* ── TABS ──────────────────────────────────────────────── */
+    .tabs-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .tab-btn {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: var(--text-secondary);
+      border-color: rgba(255,255,255,0.15);
+    }
+    .tab-btn.active {
+      background: var(--accent-dim);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+
 
       html, body { overflow: auto; height: auto; }
       .shell { padding: 16px 16px; gap: 16px; height: auto; min-height: 100vh; overflow: visible; }
@@ -643,10 +674,11 @@
 
   <div class="divider"></div>
 
-  <!-- SECTION HEADER -->
-  <div class="section-header">
-    <span class="section-label">Cuentas activas</span>
-    <div class="section-line"></div>
+  <!-- TABS -->
+  <div class="tabs-bar">
+    <button class="tab-btn active" id="tab-propio" onclick="switchTab('propio')">Riesgo Propio</button>
+    <button class="tab-btn" id="tab-terceros" onclick="switchTab('terceros')">Riesgo Terceros</button>
+    <div class="section-line" style="flex:1"></div>
     <span class="section-count" id="cardCount">1 cuenta</span>
   </div>
 
@@ -694,21 +726,31 @@
 //  Columnas esperadas en hoja DASHBOARD:
 //  pendientes | docok | rechazos | solicitodoc | finalizados | staff
 // ─────────────────────────────────────────────────────────────
-const SHEETS = [
-  { account: 'PTV',        color: '#00e5ff', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQiMfj0ip5PgedkDseKXsURINsek-prgcJDYTZ_KRxhowvRq6J0dIrbVvnjc4rxDswHVHf8qf0_cqqs/pub?gid=523825407&single=true&output=csv' },
-  { account: 'COMPARA',    color: '#00e5a0', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtoN1I5IUJBFYRWN91Lg38J0oruZtcdP7cQrNT-oKV3yL3QxIC94hhZyt-OndS-MQ49h2vVgOLW5Em/pub?gid=747824445&single=true&output=csv' },
-  { account: 'ASSIST 365', color: '#a78bfa', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vROgCQpx9ZUlT9SmYo7Al8SpLo92UijhLlNU5QnwyMYKcITQ7ACFPSHd3RL2HwVm1z95ovB-toFasHR/pub?gid=303374333&single=true&output=csv' },
-  { account: 'ASSISTO',    color: '#fb923c', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTige45drPawlSIthC2rgq1Wv1-rVTv8ZVa-jORcRYMYkK4xvDK-s2LNDX_ZipZ-spzYs_-4xLQJF6k/pub?gid=1143822547&single=true&output=csv' },
-  { account: 'CELESTE',    color: '#38bdf8', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRupZzGykxmKejNw5DpGXyjes0LoqvaZAsWRFKU88KgsnTKQZWDjK8TNfRg_ek8lhAXxSSIu4t0bocS/pub?gid=750761894&single=true&output=csv' },
-  { account: 'SAFE TRAVEL',color: '#f472b6', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSYw16DI9ixD4UdUl-4ckmr5vp-GHHdHkO6b4KU4EGU12xljmVqPjSXAto9mFQv1JpUhzRI8Z2HmnUf/pub?gid=2144793121&single=true&output=csv' },
-];
+const SHEETS = {
+  propio: [
+    { account: 'PTV',        color: '#00e5ff', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQiMfj0ip5PgedkDseKXsURINsek-prgcJDYTZ_KRxhowvRq6J0dIrbVvnjc4rxDswHVHf8qf0_cqqs/pub?gid=523825407&single=true&output=csv' },
+    { account: 'COMPARA',    color: '#00e5a0', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTtoN1I5IUJBFYRWN91Lg38J0oruZtcdP7cQrNT-oKV3yL3QxIC94hhZyt-OndS-MQ49h2vVgOLW5Em/pub?gid=747824445&single=true&output=csv' },
+    { account: 'ASSIST 365', color: '#a78bfa', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vROgCQpx9ZUlT9SmYo7Al8SpLo92UijhLlNU5QnwyMYKcITQ7ACFPSHd3RL2HwVm1z95ovB-toFasHR/pub?gid=303374333&single=true&output=csv' },
+    { account: 'ASSISTO',    color: '#fb923c', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTige45drPawlSIthC2rgq1Wv1-rVTv8ZVa-jORcRYMYkK4xvDK-s2LNDX_ZipZ-spzYs_-4xLQJF6k/pub?gid=1143822547&single=true&output=csv' },
+    { account: 'CELESTE',    color: '#38bdf8', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRupZzGykxmKejNw5DpGXyjes0LoqvaZAsWRFKU88KgsnTKQZWDjK8TNfRg_ek8lhAXxSSIu4t0bocS/pub?gid=750761894&single=true&output=csv' },
+    { account: 'SAFE TRAVEL',color: '#f472b6', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSYw16DI9ixD4UdUl-4ckmr5vp-GHHdHkO6b4KU4EGU12xljmVqPjSXAto9mFQv1JpUhzRI8Z2HmnUf/pub?gid=2144793121&single=true&output=csv' },
+  ],
+  terceros: [
+    { account: 'CHUBB',    color: '#f43f5e', hideStates: true, url: '' },
+    { account: 'KOVR',     color: '#f59e0b', hideStates: true, url: '' },
+    { account: 'NEXT',     color: '#8b5cf6', hideStates: true, url: '' },
+    { account: 'GTA',      color: '#06b6d4', hideStates: true, url: '' },
+    { account: 'AFFINITY', color: '#10b981', hideStates: true, url: '' },
+  ],
+};
 
 const CONFIG = {
   refreshIntervalMs: 60_000,
 };
 
 // ─── DATOS LOCALES (usados cuando no hay sheet) ───────────────
-const LOCAL_DATA = [
+const LOCAL_DATA = {
+  propio: [
   {
     account: 'PTV',
     eyebrow: 'Cuenta',
@@ -787,13 +829,22 @@ const LOCAL_DATA = [
       { label: 'Solicito Doc', value:  8, color: '#00e5ff' },
     ],
   },
-];
+  ],
+  terceros: [
+    { account: 'CHUBB',    eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#f43f5e', finalizados: 0, states: [] },
+    { account: 'KOVR',     eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#f59e0b', finalizados: 0, states: [] },
+    { account: 'NEXT',     eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#8b5cf6', finalizados: 0, states: [] },
+    { account: 'GTA',      eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#06b6d4', finalizados: 0, states: [] },
+    { account: 'AFFINITY', eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#10b981', finalizados: 0, states: [] },
+  ],
+};
 
 // ─── PALETA DE COLORES POR DEFECTO ───────────────────────────
 const PALETTE = ['#00e5ff','#00e5a0','#ffc542','#ff4d6d','#a78bfa','#fb923c'];
 
 // ─── ESTADO ───────────────────────────────────────────────────
 let data = [];
+let activeTab = 'propio'; // 'propio' | 'terceros'
 let refreshTimer = null;
 
 // ─── UTILIDADES ───────────────────────────────────────────────
@@ -848,17 +899,29 @@ function parseCuentaCsv(raw, sheet) {
   };
 }
 
-// ─── FETCH DATOS ──────────────────────────────────────────────
+// ─── SWITCH TAB ───────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tab-propio').classList.toggle('active', tab === 'propio');
+  document.getElementById('tab-terceros').classList.toggle('active', tab === 'terceros');
+  if (refreshTimer) clearInterval(refreshTimer);
+  fetchData();
+  refreshTimer = setInterval(fetchData, CONFIG.refreshIntervalMs);
+}
+
+
 async function fetchData() {
-  const activos = SHEETS.filter(s => s.url.trim() !== '');
+  const activos = SHEETS[activeTab].filter(s => s.url.trim() !== '');
 
   if (activos.length === 0) {
-    data = LOCAL_DATA;
+    data = LOCAL_DATA[activeTab];
     render();
     return;
   }
 
   document.getElementById('sourceLabel').textContent = 'Cargando…';
+
+  const subtitle = activeTab === 'propio' ? 'Riesgo Propio' : 'Riesgo Terceros';
 
   const results = await Promise.all(
     activos.map(async sheet => {
@@ -866,7 +929,9 @@ async function fetchData() {
         const res = await fetch(sheet.url);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const csv = await res.text();
-        return parseCuentaCsv(csv, sheet);
+        const parsed = parseCuentaCsv(csv, sheet);
+        if (parsed) parsed.subtitle = subtitle;
+        return parsed;
       } catch (err) {
         console.warn(`Error cargando ${sheet.account}:`, err);
         return null;
