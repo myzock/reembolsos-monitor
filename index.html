@@ -48,14 +48,14 @@
 
     /* ── RESET ─────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { height: 100%; }
+    html, body { height: 100%; overflow: hidden; }
     body {
       font-family: 'DM Sans', sans-serif;
       background: var(--bg);
       color: var(--text-primary);
-      min-height: 100vh;
+      height: 100vh;
       transition: background var(--transition), color var(--transition);
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
     /* ── NOISE OVERLAY ─────────────────────────────────────── */
@@ -72,9 +72,10 @@
     .shell {
       position: relative; z-index: 1;
       display: flex; flex-direction: column;
-      min-height: 100vh;
-      padding: 28px 36px;
-      gap: 28px;
+      height: 100vh;
+      padding: 18px 28px;
+      gap: 14px;
+      overflow: hidden;
     }
 
     /* ── TOP BAR ───────────────────────────────────────────── */
@@ -100,12 +101,12 @@
     }
     .brand-name {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px;
+      font-size: 18px;
       letter-spacing: 3px;
       color: var(--text-primary);
     }
     .brand-tag {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 500;
       letter-spacing: 2.5px;
       text-transform: uppercase;
@@ -122,13 +123,13 @@
     }
     .clock-time {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 26px;
+      font-size: 20px;
       letter-spacing: 2px;
       color: var(--text-primary);
       line-height: 1;
     }
     .clock-date {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 400;
       letter-spacing: 1.5px;
       text-transform: uppercase;
@@ -210,7 +211,9 @@
     .cards-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 14px;
+      gap: 10px;
+      flex: 1;
+      min-height: 0;
     }
 
     /* ── ACCOUNT CARD ──────────────────────────────────────── */
@@ -257,48 +260,48 @@
     .card-left {
       display: flex; flex-direction: column;
       justify-content: space-between;
-      padding: 24px 28px 24px 36px;
-      flex: 0 0 190px;
+      padding: 16px 22px 16px 28px;
+      flex: 0 0 180px;
       border-right: 1px solid var(--border);
     }
     .card-eyebrow {
-      font-size: 11px; font-weight: 600;
+      font-size: 10px; font-weight: 600;
       letter-spacing: 3px; text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
     }
     .card-name {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 34px;
+      font-size: 28px;
       letter-spacing: 2px;
       color: var(--text-primary);
       line-height: 1;
     }
     .card-subtitle {
-      font-size: 13px; font-weight: 400;
+      font-size: 12px; font-weight: 400;
       color: var(--text-secondary);
-      margin-top: 4px;
+      margin-top: 2px;
     }
 
     /* staff pill */
     .card-staff {
       display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px;
+      padding: 6px 10px;
       border-radius: 10px;
       border: 1px solid var(--border);
       width: fit-content;
-      margin-top: 16px;
+      margin-top: 10px;
     }
-    .staff-icon { font-size: 16px; line-height: 1; }
+    .staff-icon { font-size: 14px; line-height: 1; }
     .staff-info { display: flex; flex-direction: column; gap: 0; }
     .staff-number {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 22px; line-height: 1;
+      font-size: 18px; line-height: 1;
       letter-spacing: 1px;
       color: var(--text-primary);
     }
     .staff-label {
-      font-size: 8px; font-weight: 600;
+      font-size: 7px; font-weight: 600;
       letter-spacing: 2px; text-transform: uppercase;
       color: var(--text-secondary);
     }
@@ -307,13 +310,13 @@
     .card-cases {
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: 24px 20px;
-      flex: 0 0 110px;
+      padding: 16px 16px;
+      flex: 1;
       border-right: 1px solid var(--border);
     }
     .cases-number {
       font-family: 'Bebas Neue', sans-serif;
-      font-size: 68px;
+      font-size: 72px;
       line-height: 1;
       letter-spacing: -1px;
       color: var(--text-primary);
@@ -362,6 +365,8 @@
 
     /* ── HISTÓRICO PANEL ───────────────────────────────────── */
     .historico-panel {
+      display: none;
+    }
       position: relative;
       border-radius: var(--radius);
       border: 1px solid rgba(255,255,255,0.06);
@@ -523,7 +528,9 @@
     /* ── RESPONSIVE MOBILE ─────────────────────────────────── */
     @media (max-width: 900px) {
 
-      .shell { padding: 16px 16px; gap: 16px; }
+      html, body { overflow: auto; height: auto; }
+      .shell { padding: 16px 16px; gap: 16px; height: auto; min-height: 100vh; overflow: visible; }
+      .historico-panel { display: block; }
 
       /* header */
       .topbar { flex-wrap: wrap; gap: 10px; }
@@ -536,7 +543,7 @@
       .status-label, .status-source, .status-sep { font-size: 11px; }
 
       /* grid: 1 columna */
-      .cards-grid { grid-template-columns: 1fr; gap: 12px; }
+      .cards-grid { grid-template-columns: 1fr; gap: 12px; flex: none; }
 
       /* card: apilada verticalmente */
       .account-card {
