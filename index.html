@@ -889,24 +889,28 @@ function startClock() {
 
 // ─── PARSEAR CSV DE CHUBB (dos sheets: pendientes + finalizados) ──
 async function fetchChubb(sheet) {
-  const fetchCount = async (url) => {
+  const fetchData = async (url) => {
     const res = await fetch(url);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const csv = await res.text();
     const lines = csv.trim().split('\n').filter(Boolean);
-    // la hoja DASHBOARD tiene encabezado en A1 y valor en A2
-    if (lines.length >= 2) {
-      const sep = lines[0].includes('\t') ? '\t' : ',';
-      const val = lines[1].split(sep)[0].trim().replace(/^"|"$/g, '').replace(/\r/g, '');
-      return parseInt(val) || 0;
-    }
-    return 0;
+    if (lines.length < 2) return {};
+    const sep = lines[0].includes('\t') ? '\t' : ',';
+    const headers = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/\r/g,''));
+    const values  = lines[1].split(sep).map(v => v.trim().replace(/^"|"$/g,'').replace(/\r/g,''));
+    const row = {};
+    headers.forEach((h, i) => { row[h] = values[i] ?? '0'; });
+    return row;
   };
 
-  const [pendientes, finalizados] = await Promise.all([
-    fetchCount(sheet.urlPendientes),
-    fetchCount(sheet.urlFinalizados),
+  const [rowPend, rowFin] = await Promise.all([
+    fetchData(sheet.urlPendientes),
+    fetchData(sheet.urlFinalizados),
   ]);
+
+  const pendientes  = parseInt(rowPend['pendientes'])  || 0;
+  const finalizados = parseInt(rowFin['finalizados'])  || 0;
+  const staff       = parseInt(rowPend['staff'])       || 0;
 
   return {
     account:    sheet.account,
@@ -914,9 +918,9 @@ async function fetchChubb(sheet) {
     subtitle:   'Riesgo Terceros',
     color:      sheet.color,
     hideStates: true,
-    staff:      0,
+    staff,
     finalizados,
-    states:     [{ label: 'Pendientes', value: pendientes, color: sheet.color }],
+    states: [{ label: 'Pendientes', value: pendientes, color: sheet.color }],
   };
 }
 
