@@ -735,11 +735,16 @@ const SHEETS = {
     { account: 'SAFE TRAVEL',color: '#f472b6', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSYw16DI9ixD4UdUl-4ckmr5vp-GHHdHkO6b4KU4EGU12xljmVqPjSXAto9mFQv1JpUhzRI8Z2HmnUf/pub?gid=2144793121&single=true&output=csv' },
   ],
   terceros: [
-    { account: 'CHUBB',    color: '#f43f5e', hideStates: true, url: '' },
-    { account: 'KOVR',     color: '#f59e0b', hideStates: true, url: '' },
-    { account: 'NEXT',     color: '#8b5cf6', hideStates: true, url: '' },
+    {
+      account: 'CHUBB', color: '#f43f5e', hideStates: true,
+      urlPendientes:  'https://docs.google.com/spreadsheets/d/e/2PACX-1vQc7xbNvZmD8fWQmyUe9YL8rk-rb1_iZUAJZ5O5utViDM0BgFGo1bOe-9OKpjOWXndfDR6X2kAhTlzC/pub?gid=825874065&single=true&output=csv',
+      urlFinalizados: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiglEHaXmR2oVM9czrfJKYFTRzaYQmUclBzWOfi-9CjyxV2RRl8b02kGQpYTyfRQk0_bL5nLasRL90/pub?gid=691659773&single=true&output=csv',
+      url: '',
+    },
+    { account: 'AFFINITY', color: '#10b981', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQa9S5bY_SUdmZUl-mG0VGnQq8as7SutSvYIqbyLuSqOKNsQrB0j-VGQBbZuZSYTQ/pub?gid=1264893930&single=true&output=csv' },
+    { account: 'NEXT',     color: '#8b5cf6', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQa9S5bY_SUdmZUl-mG0VGnQq8as7SutSvYIqbyLuSqOKNsQrB0j-VGQBbZuZSYTQ/pub?gid=508291401&single=true&output=csv' },
+    { account: 'SAFETY',   color: '#f59e0b', hideStates: true, url: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQa9S5bY_SUdmZUl-mG0VGnQq8as7SutSvYIqbyLuSqOKNsQrB0j-VGQBbZuZSYTQ/pub?gid=1419262681&single=true&output=csv' },
     { account: 'GTA',      color: '#06b6d4', hideStates: true, url: '' },
-    { account: 'AFFINITY', color: '#10b981', hideStates: true, url: '' },
   ],
 };
 
@@ -831,10 +836,10 @@ const LOCAL_DATA = {
   ],
   terceros: [
     { account: 'CHUBB',    eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#f43f5e', finalizados: 0, states: [] },
-    { account: 'KOVR',     eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#f59e0b', finalizados: 0, states: [] },
-    { account: 'NEXT',     eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#8b5cf6', finalizados: 0, states: [] },
-    { account: 'GTA',      eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#06b6d4', finalizados: 0, states: [] },
     { account: 'AFFINITY', eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#10b981', finalizados: 0, states: [] },
+    { account: 'NEXT',     eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#8b5cf6', finalizados: 0, states: [] },
+    { account: 'SAFETY',   eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#f59e0b', finalizados: 0, states: [] },
+    { account: 'GTA',      eyebrow: 'Cuenta', subtitle: 'Riesgo Terceros', staff: 0, color: '#06b6d4', finalizados: 0, states: [] },
   ],
 };
 
@@ -882,7 +887,68 @@ function startClock() {
   setInterval(tick, 1000);
 }
 
-// ─── PARSEAR CSV DE UNA CUENTA ────────────────────────────────
+// ─── PARSEAR CSV DE CHUBB (dos sheets: pendientes + finalizados) ──
+async function fetchChubb(sheet) {
+  const fetchCount = async (url) => {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const csv = await res.text();
+    const lines = csv.trim().split('\n').filter(Boolean);
+    // la hoja DASHBOARD tiene encabezado en A1 y valor en A2
+    if (lines.length >= 2) {
+      const sep = lines[0].includes('\t') ? '\t' : ',';
+      const val = lines[1].split(sep)[0].trim().replace(/^"|"$/g, '').replace(/\r/g, '');
+      return parseInt(val) || 0;
+    }
+    return 0;
+  };
+
+  const [pendientes, finalizados] = await Promise.all([
+    fetchCount(sheet.urlPendientes),
+    fetchCount(sheet.urlFinalizados),
+  ]);
+
+  return {
+    account:    sheet.account,
+    eyebrow:    'Cuenta',
+    subtitle:   'Riesgo Terceros',
+    color:      sheet.color,
+    hideStates: true,
+    staff:      0,
+    finalizados,
+    states:     [{ label: 'Pendientes', value: pendientes, color: sheet.color }],
+  };
+}
+
+// ─── PARSEAR CSV DE CUENTA TERCEROS (estados 1+2+3+8 = pendientes) ──
+function parseTercerosCsv(raw, sheet) {
+  const lines = raw.trim().split('\n').filter(Boolean);
+  if (lines.length < 2) return null;
+  const sep = lines[0].includes('\t') ? '\t' : ',';
+  const headers = lines[0].split(sep).map(h => h.trim().toLowerCase().replace(/\r/g,''));
+  const cols = lines[1].split(sep).map(c => c.trim().replace(/^"|"$/g,'').replace(/\r/g,''));
+  const row = {};
+  headers.forEach((h, j) => { row[h] = cols[j] ?? ''; });
+
+  // estados 1,2,3,8 = pendientes; 4,5,6,7 = finalizados
+  const pendientes = (parseInt(row['estado1'])||0) + (parseInt(row['estado2'])||0)
+                   + (parseInt(row['estado3'])||0) + (parseInt(row['estado8'])||0);
+  const finalizados = (parseInt(row['estado4'])||0) + (parseInt(row['estado5'])||0)
+                    + (parseInt(row['estado6'])||0) + (parseInt(row['estado7'])||0);
+
+  return {
+    account:    sheet.account,
+    eyebrow:    'Cuenta',
+    subtitle:   'Riesgo Terceros',
+    color:      sheet.color,
+    hideStates: true,
+    staff:      parseInt(row['staff']) || 0,
+    finalizados,
+    states:     [{ label: 'Pendientes', value: pendientes, color: sheet.color }],
+  };
+}
+
+
 function parseCuentaCsv(raw, sheet) {
   const lines = raw.trim().split('\n').filter(Boolean);
   if (lines.length < 2) return null;
@@ -910,7 +976,8 @@ function parseCuentaCsv(raw, sheet) {
 
 // ─── FETCH DATOS ──────────────────────────────────────────────
 async function fetchData() {
-  const activos = SHEETS[activeTab].filter(s => s.url.trim() !== '');
+  const sheets = SHEETS[activeTab];
+  const activos = sheets.filter(s => s.url.trim() !== '' || s.urlPendientes);
 
   if (activos.length === 0) {
     data = LOCAL_DATA[activeTab];
@@ -923,10 +990,14 @@ async function fetchData() {
   const results = await Promise.all(
     activos.map(async sheet => {
       try {
+        // CHUBB: dos sheets separados
+        if (sheet.urlPendientes) return await fetchChubb(sheet);
         const res = await fetch(sheet.url);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const csv = await res.text();
-        return parseCuentaCsv(csv, sheet);
+        return activeTab === 'terceros'
+          ? parseTercerosCsv(csv, sheet)
+          : parseCuentaCsv(csv, sheet);
       } catch (err) {
         console.warn(`Error cargando ${sheet.account}:`, err);
         return null;
